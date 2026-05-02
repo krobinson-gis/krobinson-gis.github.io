@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!--*****************************************************
+
+GEOG 414: Programming for Geospatial Data Science II
+Unit 2 Assignment: Symbol Map
+
+This part of your Unit 2 assignment requires that you develop a symbol-based map using Leaflet, a popular front-end JavaScript Web mapping framework.  You will use GeoJSON source data containing point geometry and attribute data to create an interactive map.
+
+Add your work directly to this document, and once complete, submit to the course website for grading.
+
+*****************************************************-->
+
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<!-- TO DO: Add a map title -->
+	<title>American Civil War Battles</title>
+	<!-- TO DO: Import Bootstrap (first), Leaflet (second), and ColorBrewer (third) if needed -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+	integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+	crossorigin=""/>
+	 <!-- Make sure you put this AFTER Leaflet's CSS -->
+	 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+	 <script src="CWBS.js"></script>
+    <!-- TO DO: Import GeoJSON file, converted to JS file with variable declaration -->
+	<!-- -->
+    <style>
+		/* TO DO: Write custom CSS for map and legend as needed */
+		#map {
+			height: 600px;
+		}
+		#map path:hover {
+			stroke: yellow;
+			fill: yellow;
+		}
+		#legend {
+			background-color: white;
+			border: 2px solid rgba(0,0,0,0.2);
+			border-radius: 4px;
+			padding: 5px;
+		}
+		#legend-title {
+			font-weight: bold;
+			border-bottom: 1px solid rgba(0,0,0,0.2);
+			margin-bottom: 5px;
+			padding-bottom: 5px;
+		}
+		.legend-row {
+			display: table;
+			padding: 3px;
+		}
+		.legend-color {
+			display: table-cell;
+			width: 30px;
+			height: 30px;
+			padding: 5px;
+		}
+		.legend-caption {
+			display: table-cell;
+			padding-left: 5px;
+			vertical-align: middle;
+		}
+	</style>
+</head>
+<body>
+	<!-- TO DO: Create single-column Bootstrap layout with two rows: one for the map's header (title and subtitle) and another containing the map itself -->
+	<div class="container">
+		<div class="row">
+			<div class="col">
+				<h3>American Civil War Battle Sites</h3>
+				<h5>Winning Side and Total Casualties by Battle</h5>
+			</div>	
+		</div>
+		<div class="row">
+			<div class="col">
+				<div id="map"></div>
+			</div>
+		</div>
+	</div>
+    <!-- TO DO: Outside the container, create the structure of the legend -->
+	<div id="legend">
+		<div id="legend-title">Winning Side</div>
+		<div class="legend-row">
+			<div class="legend-color" style="background-color: #2171b5"></div>
+			<div class="legend-caption">Union</div>
+		</div>
+		<div class="legend-row">
+			<div class="legend-color" style="background-color: #f16913"></div>
+			<div class="legend-caption">Confederate</div>
+		</div>
+		<div class="legend-row">
+			<div class="legend-color" style="background-color: #000000"></div>
+			<div class="legend-caption">Inconclusive</div>
+		</div>
+	</div>
+</body>
+</html>
+<script type="text/javascript">
+
+// TO DO: Write utility function to return fill color for symbols
+function symbolColor(result) {
+	if (result == 'Confederate') return "#f16913";
+	else if (result == 'Union') return "#2171b5";
+	else return "#000000";
+}
+// TO DO: Write utility function to return radius (in pixels) for symbols
+function symbolRadius(casualties) {
+	if (casualties <= 2500) return 5;
+	if (casualties <= 5000) return 10;
+	if (casualties <= 7500) return 15;
+	if (casualties <= 10000) return 20;
+	if (casualties <= 20000) return 30;
+	if (casualties <= 30000) return 40;
+	if (casualties <= 40000) return 50;
+	if (casualties <= 51000) return 60;
+	else return 5;
+}
+// TO DO: Initialize the map with an appropriate center and zoom level
+let map = L.map("map").setView([36.7, -93.8], 4);
+
+// TO DO: Add a visually appealing and unobtrusive basemap
+let basemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+	subdomains: 'abcd',
+	maxZoom: 20
+}).addTo(map);
+
+// TO DO: Add GeoJSON data layer, using pointToLayer to create each feature as a circleMarker with a specified radius, fill color, and stroke color.  Bind a tooltip showing variable values to each feature as well, within the pointToLayer function.
+let dataLayer = L.geoJson(battleSites, {
+	pointToLayer: function(feature, latlng) {
+		return L.circleMarker(latlng, {
+			radius: symbolRadius(feature.properties.casualties),
+			fillColor: symbolColor(feature.properties.result),
+			color: symbolColor(feature.properties.result),
+			weight: 1
+		}).bindTooltip(`Battle Name: <i>${feature.properties.battle_name}</i><br/>Location: ${feature.properties.locations}<br/>Dates: ${feature.properties.begin_date} to ${feature.properties.end_date}<br/>Winning Side: ${feature.properties.result}<br/><strong>Total Casualties: ${feature.properties.casualties}</strong><br/>${feature.properties.casualties_text}`);
+	}
+}).addTo(map);
+// TO DO: Create new Leaflet control and using the onAdd function, take the contents of the legend in the DOM and assign it to the new Leaflet control
+let legend = L.control({position: 'bottomleft'});
+legend.onAdd = function(map) {
+	return document.getElementById('legend');
+}
+legend.addTo(map);
+
+</script>
